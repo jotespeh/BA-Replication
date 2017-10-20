@@ -1,0 +1,149 @@
+---
+title: "Bachelor Thesis - Tax Competition in the EU"
+output: html_notebook
+---
+
+Pretty self explanatory.
+```{r}
+source("R/0-load-libraries.R")
+
+```
+
+
+
+Tax Foundation Data
+TODO: Plan for 
+```{r}
+ctaxes <- read_csv(here("raw", "world-corporate-tax-rates.csv")) %>%
+  filter(eu == TRUE | oecd == TRUE) %>%
+  select(year, country, corporateTaxRate, oecd, eu, gdp)
+
+cit2 <- read_csv(here("raw", "OECD_corp_income_tax_rates_1981-2015.csv")) %>%
+  gather(year, CIT, -country) %>%
+  mutate(year = as.numeric(year))
+
+
+load("output/tax_st.rds")
+tax_st$year <- as.numeric(tax_st$year)
+
+ctaxes2 <- right_join(ctaxes, cit2, by = c("country","year")) %>%
+  mutate(CIT = as.numeric(CIT))
+
+ctaxes3 <- left_join(ctaxes2, tax_st, by = c("country", "year"))
+
+ctaxes3 %>% mutate()
+
+```
+
+
+```{r}
+load(here("output", "tax_comb"))
+
+ggplot(tax_comb, mapping = aes(x = year)) + geom_smooth(mapping = aes(y = CIT)) + geom_smooth(aes(y = ETR)) +
+  theme_bw()
+```
+
+
+
+```{r}
+tplot <- ggplot(ctaxes) + aes(x = year, y = corporateTaxRate) 
+tplot +
+  geom_smooth(mapping = aes(color = eu))
+
+
+tplot + geom_smooth() + facet_wrap(~country)
+```
+
+
+```{r}
+
+ggplot(tax_st, mapping = aes(x = year, y = CIT)) + geom_jitter(aes(alpha = 0.3))
+```
+
+```{r}
+mean_t <- ctaxes %>%
+  select(year, country, CIT = corporateTaxRate, eu, GDP = gdp) %>%
+  group_by(year) %>%
+  summarise(C = mean(CIT), C2 = weighted.mean(CIT, GDP))
+
+mean_t$year = as.numeric(mean_t$year)
+
+ggplot(mean_t, aes(x = year, y = C)) + geom_smooth()
+
+```
+
+
+
+```{r}
+mean_st <- tax_st %>% group_by(year) %>%
+  summarise(PIT = mean(PIT), CIT = mean(CIT), VAT = mean(VAT, na.rm = TRUE))
+
+mean_st$year <- as.numeric(mean_st$year)
+
+ggplot(mean_st, aes(x = year)) + geom_smooth(aes(y = PIT)) + geom_smooth(aes(y = CIT)) + geom_smooth(aes(y = VAT)) + theme_classic() 
+```
+
+
+World Development Indicators für die ganzen anderen Controls. OECD Länder auch
+
+
+```{r}
+library(WDI)
+
+s <- WDIsearch("GDP")
+
+c1 <- read_csv2("raw/oecd_members.csv") %>%
+  mutate(iso2 = countrycode(country, "country.name", "iso2c"),
+         joined = dmy(joined))
+
+load("output/tax_comb")
+
+c2 <- unique(tax_comb$country)
+
+c2 <- as.vector(countrycode(c2, "country.name", "iso2c"))
+
+countries <- unique(append(c2, c1$iso2))
+
+# GDP (Constant/Current??), "% pop urban", Gov Final Expenditure
+
+indicators <- c("SP.URB.TOTL.IN.ZS", "NY.GDP.MKTP.KN", "NE.CON.GOVT.CD",
+                "SP.POP.0014.TO.ZS",  "SP.POP.65UP.TO.ZS" )
+
+a <- WDI(country = countries, indicator = indicators,
+         start = 1981, end = 2015)
+
+```
+
+
+
+# Trade & Competition Data
+
+```{r}
+iso3 <- countrycode(countries, "iso2c", "iso3c")
+tac <- get_data360(indicator_id = "3793", country_iso3 = iso3,
+                   output_type = "long") %>%
+  select(country = `Country Name`, year = period())
+
+```
+
+
+
+
+Capital Openness Index by Chinn & Ito:
+http://web.pdx.edu/~ito/Chinn-Ito_website.htm
+
+```{r}
+
+# Was zum Fick: Luxemburg macht Stress
+kapoen <- read_dta("raw/kaopen_2015.dta") %>%
+  select(country = country_name, year, kaopen) %>%
+  mutate(iso2 = countrycode(country, "country.name", "iso2c")) %>%
+  filter(iso2 %in% countries)
+
+```
+
+
+
+
+
+
