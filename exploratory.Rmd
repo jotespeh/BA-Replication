@@ -72,7 +72,7 @@ ggplot(mean_t, aes(x = year, y = C)) + geom_smooth()
 
 ```
 
-
+s
 
 ```{r}
 mean_st <- tax_st %>% group_by(year) %>%
@@ -92,9 +92,15 @@ library(WDI)
 
 s <- WDIsearch("GDP")
 
+# Zu faul für eine kleine map?
 c1 <- read_csv2("raw/oecd_members.csv") %>%
-  mutate(iso2 = countrycode(country, "country.name", "iso2c"),
-         joined = dmy(joined))
+  mutate(iso2c = countrycode(country, "country.name", "iso2c"),
+         joined = year(dmy(joined)))
+
+eu1 <- read_csv2("raw/eu_members.csv") %>%
+  mutate(iso2c = countrycode(country, "country.name", "iso2c"),
+         joined = year(dmy(joined)))
+
 
 load("output/tax_comb")
 
@@ -104,13 +110,19 @@ c2 <- as.vector(countrycode(c2, "country.name", "iso2c"))
 
 countries <- unique(append(c2, c1$iso2))
 
-# GDP (Constant/Current??), "% pop urban", Gov Final Expenditure
+# GDP (Current), "% pop urban", Gov Final Expenditure
 
-indicators <- c("SP.URB.TOTL.IN.ZS", "NY.GDP.MKTP.KN", "NE.CON.GOVT.CD",
-                "SP.POP.0014.TO.ZS",  "SP.POP.65UP.TO.ZS" )
+indicators <- c("SP.URB.TOTL.IN.ZS", "NY.GDP.MKTP.CD", "NE.CON.GOVT.CD",
+                "SP.POP.0014.TO.ZS",  "SP.POP.65UP.TO.ZS")
+labels_wdi <- c("popUrb", "GDP", "govspend", "pop14", "pop65")
 
-a <- WDI(country = countries, indicator = indicators,
+wdi_controls <- WDI(country = countries, indicator = indicators,
          start = 1981, end = 2015)
+
+names(wdi_controls)[4:length(wdi_controls)] = labels_wdi
+
+b <- left_join(a, tax_comb, by = c("country", "year"))
+c <- plm.data(b)
 
 ```
 
@@ -143,7 +155,22 @@ kapoen <- read_dta("raw/kaopen_2015.dta") %>%
 ```
 
 
+```{r}
 
+test <- a
+c2 <- select(c1, iso2c = iso2, join)
+
+asd <- left_join(wdi_controls, c2 , by = "iso2c") %>%
+  mutate(OECD = ifelse(year >= join, TRUE, FALSE)) %>%
+  select(-join)
+
+asd2 <- left_join(asd, eu1, by = "iso2c") %>%
+  mutate(EU = ifelse(year >= joined, TRUE, FALSE)) %>%
+  select(-joined)
+
+
+ggplot(asd2) + geom_smooth(mapping = aes(x = year, y = GDP, color = EU))
+```
 
 
 

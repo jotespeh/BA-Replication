@@ -98,6 +98,18 @@ tax_found <- read_csv(here("raw", "OECD_corp_income_tax_rates_1981-2015.csv")) %
   mutate(iso3 = countrycode(country, "country.name", "iso3c"), CIT = CIT*100)
 
  
+
+## Database of Political Institutions ----
+
+# Manual Cleanup cuz we don't want to consider turk cyprus
+DPI <- read_dta("raw/DPI2015.dta") %>% 
+  select(country = countryname, year, execLR = execrlc) %>%
+  mutate(iso2c = countrycode(country, "country.name", "iso2c"), 
+         execR = ifelse(execLR == 1, TRUE, FALSE)) %>%
+  filter(iso2c %in% countries, year > 1980,
+         country != "Turk Cyprus")
+
+
 ## Mergin', yo ----
 
 tax_comb <- left_join(tax_st, tax_ef, by = c("country", "year")) %>%

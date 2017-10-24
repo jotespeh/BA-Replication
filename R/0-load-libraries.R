@@ -13,6 +13,7 @@ library(tidyverse)
 library(ggthemes)
 library(purrr)
 library(lubridate)
+library(magrittr)
 
 # Data Input ----
 
