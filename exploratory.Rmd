@@ -98,7 +98,7 @@ c1 <- read_csv2("raw/oecd_members.csv") %>%
          joined = year(dmy(joined)))
 
 eu1 <- read_csv2("raw/eu_members.csv") %>%
-  mutate(iso2c = countrycode(country, "country.name", "iso2c"),
+  transmute(iso2c = countrycode(country, "country.name", "iso2c"),
          joined = year(dmy(joined)))
 
 
@@ -112,7 +112,7 @@ countries <- unique(append(c2, c1$iso2))
 
 # GDP (Current), "% pop urban", Gov Final Expenditure
 
-indicators <- c("SP.URB.TOTL.IN.ZS", "NY.GDP.MKTP.CD", "NE.CON.GOVT.CD",
+indicators <- c("SP.URB.TOTL.IN.ZS", "NY.GDP.MKTP.CD", "NE.CON.GOVT.ZS",
                 "SP.POP.0014.TO.ZS",  "SP.POP.65UP.TO.ZS")
 labels_wdi <- c("popUrb", "GDP", "govspend", "pop14", "pop65")
 
@@ -121,8 +121,7 @@ wdi_controls <- WDI(country = countries, indicator = indicators,
 
 names(wdi_controls)[4:length(wdi_controls)] = labels_wdi
 
-b <- left_join(a, tax_comb, by = c("country", "year"))
-c <- plm.data(b)
+b <- left_join(wdi_controls, tax_comb, by = c("country", "year"))
 
 ```
 
@@ -141,7 +140,7 @@ tac <- get_data360(indicator_id = "3793", country_iso3 = iso3,
 
 
 
-Capital Openness Index by Chinn & Ito:
+## Capital Openness Index by Chinn & Ito:
 http://web.pdx.edu/~ito/Chinn-Ito_website.htm
 
 ```{r}
@@ -150,7 +149,8 @@ http://web.pdx.edu/~ito/Chinn-Ito_website.htm
 kapoen <- read_dta("raw/kaopen_2015.dta") %>%
   select(country = country_name, year, kaopen) %>%
   mutate(iso2 = countrycode(country, "country.name", "iso2c")) %>%
-  filter(iso2 %in% countries)
+  filter(iso2 %in% countries) %>%
+  select(-country)
 
 ```
 
@@ -158,11 +158,11 @@ kapoen <- read_dta("raw/kaopen_2015.dta") %>%
 ```{r}
 
 test <- a
-c2 <- select(c1, iso2c = iso2, join)
+c2 <- select(c1, -country)
 
-asd <- left_join(wdi_controls, c2 , by = "iso2c") %>%
-  mutate(OECD = ifelse(year >= join, TRUE, FALSE)) %>%
-  select(-join)
+asd <- left_join(b, c2 , by = "iso2c") %>%
+  mutate(OECD = ifelse(year >= joined, TRUE, FALSE)) %>%
+  select(-joined)
 
 asd2 <- left_join(asd, eu1, by = "iso2c") %>%
   mutate(EU = ifelse(year >= joined, TRUE, FALSE)) %>%
@@ -170,6 +170,21 @@ asd2 <- left_join(asd, eu1, by = "iso2c") %>%
 
 
 ggplot(asd2) + geom_smooth(mapping = aes(x = year, y = GDP, color = EU))
+```
+
+
+# CIT komplettieren mit Tax Foundation Daten
+
+```{r}
+load("output/tax_found.rds")
+load("ouput/DPI.rds")
+
+tax_found %<>% mutate(iso2c = countrycode(country, "country.name", "iso2c")) %>% select(iso2c, year, CIT_f = CIT)
+tax_final <- left_join(asd2, tax_found, by = c("iso2c", "year"))  %>%
+  left_join(kapoen, by = c("iso2c" = "iso2", "year")) %>%
+  left_join(DPI, by = c("iso2c", "year"))
+
+save(tax_final, file = "output/tax_final.rds")
 ```
 
 

@@ -107,7 +107,16 @@ DPI <- read_dta("raw/DPI2015.dta") %>%
   mutate(iso2c = countrycode(country, "country.name", "iso2c"), 
          execR = ifelse(execLR == 1, TRUE, FALSE)) %>%
   filter(iso2c %in% countries, year > 1980,
-         country != "Turk Cyprus")
+         country != "Turk Cyprus") %>%
+  select(iso2c, year, execR)
+
+save(DPI, file = "output/DPI.rds")
+
+
+
+## OECD PIT ----
+
+
 
 
 ## Mergin', yo ----
