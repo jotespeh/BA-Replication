@@ -107,8 +107,9 @@ load("output/tax_comb")
 c2 <- unique(tax_comb$country)
 
 c2 <- as.vector(countrycode(c2, "country.name", "iso2c"))
+oecd_members <- as.vector(c1$iso2c)
 
-countries <- unique(append(c2, c1$iso2))
+countries <- unique(append(oecd_members, c2))
 
 # GDP (Current), "% pop urban", Gov Final Expenditure
 
@@ -120,7 +121,6 @@ wdi_controls <- WDI(country = countries, indicator = indicators,
          start = 1981, end = 2015)
 
 names(wdi_controls)[4:length(wdi_controls)] = labels_wdi
-
 b <- left_join(wdi_controls, tax_comb, by = c("country", "year"))
 
 ```
@@ -177,12 +177,15 @@ ggplot(asd2) + geom_smooth(mapping = aes(x = year, y = GDP, color = EU))
 
 ```{r}
 load("output/tax_found.rds")
-load("ouput/DPI.rds")
+load("output/DPI.rds")
+load("output/PIT.rds")
 
-tax_found %<>% mutate(iso2c = countrycode(country, "country.name", "iso2c")) %>% select(iso2c, year, CIT_f = CIT)
+tax_found %<>% select(iso2c, year, CIT_f = CIT)
 tax_final <- left_join(asd2, tax_found, by = c("iso2c", "year"))  %>%
+  select(-PIT) %>%
   left_join(kapoen, by = c("iso2c" = "iso2", "year")) %>%
-  left_join(DPI, by = c("iso2c", "year"))
+  left_join(DPI, by = c("iso2c", "year")) %>%
+  left_join(PIT, by = c("iso2c", "year"))
 
 save(tax_final, file = "output/tax_final.rds")
 ```

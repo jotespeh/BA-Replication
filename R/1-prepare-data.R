@@ -94,9 +94,10 @@ tax_found <- read_csv(here("raw", "OECD_corp_income_tax_rates_1981-2015.csv")) %
   gather(year, CIT, -country) %>%
   map_at(c("year","CIT"), as.numeric) %>% 
   bind_rows() %>%
-  filter(year < 1995) %>%
-  mutate(iso3 = countrycode(country, "country.name", "iso3c"), CIT = CIT*100)
+  transmute(iso2c = countrycode(country, "country.name", "iso2c"),
+            CIT = CIT*100, year)
 
+save(tax_found, file = "output/tax_found.rds")
  
 
 ## Database of Political Institutions ----
@@ -114,10 +115,23 @@ save(DPI, file = "output/DPI.rds")
 
 
 
-## OECD PIT ----
+## WTI + OECD Top PIT ----
 
+PIT_wti <- read_dta("raw/AYS World_Tax_Indicators_V1_Data.dta") %>%
+  select(country = name_un, year, PIT = toprate) %>%
+  mutate(iso2c = countrycode(country, "country.name", "iso2c")) %>%
+  filter(iso2c %in% countries)
 
+PIT_oecd <- read_csv("raw/PIT-oecd.csv") %>%
+  select(country = Country, year = Year, ic = `Income Tax`, PIT = Value) %>%
+  filter(year > 2005, ic == "Personal income tax") %>%
+  select(-ic) %>%
+  mutate(iso2c = countrycode(country, "country.name", "iso2c"))
 
+PIT <- rbind(PIT_wti, PIT_oecd) %>%
+  select(-country)
+
+save(PIT, file = "output/PIT.rds")
 
 ## Mergin', yo ----
 

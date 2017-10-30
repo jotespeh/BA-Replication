@@ -23,8 +23,8 @@ pooled <-
       tax, model = "pooling", effect = "twoways")
 
 model <-
-  plm(CIT_f ~ log(GDP) + popUrb + pop65 + pop14 + kaopen + PIT  + OECD + EU + 
-        execR  + lag(CIT_f),
+  plm(CIT_f ~ log(GDP) + popUrb + pop65 + pop14 + kaopen + govspend + PIT +
+        OECD + execR,
     tax, model = "within", effect = "twoways")
 
 model2 <-
