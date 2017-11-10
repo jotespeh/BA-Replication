@@ -1,0 +1,20 @@
+---
+title: "Graphen und So"
+output: html_notebook
+---
+
+
+```{r}
+source("R/0-load-libraries.R")
+load("output/tax_final.rds")
+```
+
+
+
+```{r}
+
+ggplot(tax_final, mapping = aes(x = year)) + theme_classic() +
+  geom_smooth(aes(y = CIT_f, linetype = EU), se = FALSE, colour = "black") 
+
+```
+

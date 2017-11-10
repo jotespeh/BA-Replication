@@ -90,7 +90,7 @@ World Development Indicators für die ganzen anderen Controls. OECD Länder auch
 ```{r}
 library(WDI)
 
-s <- WDIsearch("GDP")
+s <- WDIsearch("population")
 
 # Zu faul für eine kleine map?
 c1 <- read_csv2("raw/oecd_members.csv") %>%
@@ -114,13 +114,18 @@ countries <- unique(append(oecd_members, c2))
 # GDP (Current), "% pop urban", Gov Final Expenditure
 
 indicators <- c("SP.URB.TOTL.IN.ZS", "NY.GDP.MKTP.CD", "NE.CON.GOVT.ZS",
-                "SP.POP.0014.TO.ZS",  "SP.POP.65UP.TO.ZS")
-labels_wdi <- c("popUrb", "GDP", "govspend", "pop14", "pop65")
+                "SP.POP.0014.TO.ZS",  "SP.POP.65UP.TO.ZS", "SP.POP.TOTL",
+                "NE.TRD.GNFS.ZS")
+labels_wdi <- c("popUrb", "GDP", "govspend", "pop14", "pop65", "popTot",
+                "ecoOpen")
 
 wdi_controls <- WDI(country = countries, indicator = indicators,
          start = 1981, end = 2015)
 
 names(wdi_controls)[4:length(wdi_controls)] = labels_wdi
+
+save(wdi_controls, file = "output/wdi.rds")
+
 b <- left_join(wdi_controls, tax_comb, by = c("country", "year"))
 
 ```
@@ -160,7 +165,7 @@ kapoen <- read_dta("raw/kaopen_2015.dta") %>%
 test <- a
 c2 <- select(c1, -country)
 
-asd <- left_join(b, c2 , by = "iso2c") %>%
+asd <- left_join(wdi_controls, c2 , by = "iso2c") %>%
   mutate(OECD = ifelse(year >= joined, TRUE, FALSE)) %>%
   select(-joined)
 
@@ -169,23 +174,23 @@ asd2 <- left_join(asd, eu1, by = "iso2c") %>%
   select(-joined)
 
 
-ggplot(asd2) + geom_smooth(mapping = aes(x = year, y = GDP, color = EU))
+ggplot(asd2) + geom_smooth(mapping = aes(x = year, y = GDP, shape = EU))
 ```
 
 
 # CIT komplettieren mit Tax Foundation Daten
 
-```{r}
+```{r CIT complete}
 load("output/tax_found.rds")
 load("output/DPI.rds")
 load("output/PIT.rds")
 
 tax_found %<>% select(iso2c, year, CIT_f = CIT)
 tax_final <- left_join(asd2, tax_found, by = c("iso2c", "year"))  %>%
-  select(-PIT) %>%
   left_join(kapoen, by = c("iso2c" = "iso2", "year")) %>%
   left_join(DPI, by = c("iso2c", "year")) %>%
   left_join(PIT, by = c("iso2c", "year"))
+tax_final[c("EU", "OECD")][is.na(tax_final[c("EU", "OECD")])] <- FALSE
 
 save(tax_final, file = "output/tax_final.rds")
 ```
