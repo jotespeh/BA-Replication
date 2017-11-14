@@ -31,12 +31,12 @@ tax_final %>% mutate(GDP = log(GDP), popTot = log(popTot)) %>%
 # Regression Diagnostics
 
 
-baseline <- CIT_f ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend
-openness <- CIT_f ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend +
+baseline <- CIT_f ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend + execR
+openness <- CIT_f ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend + execR +
                     ecoOpen + kaopen
-membersh <- CIT_f ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend +
+membersh <- CIT_f ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend + execR +
                     ecoOpen + kaopen + EU + OECD
-altrntve <- CIT_f ~ log(GDP) + popUrb + pop65 + pop14 + PIT + govspend +
+altrntve <- CIT_f ~ log(GDP) + popUrb + pop65 + pop14 + PIT + govspend + execR +
                     ecoOpen + kaopen + EU + OECD
 
 model_baseline <- plm(baseline, tax, model = "within", effect = "twoways")
@@ -46,8 +46,9 @@ model_altrntve <- plm(altrntve, tax, model = "within", effect = "twoways")
 
 
 stargazer(model_baseline, model_openness, model_membersh,
-          out = paste0(path_table, "regression1.tex"), title = "Regression Results",
-          label = "tab_reg1", style = "apsr")
+          out = paste0(path_table, "regression1.tex"), title = "Determinants of Corporate Tax Rates",
+          label = "tab_reg1", notes = "Standard Errors in parantheses." , style = "apsr",
+          dep.var.caption = "Determinants of Corporate Tax Rate")
 
 pooled <-
   plm(CIT_f ~ log(GDP) + popUrb + pop65 + pop14 + kaopen + PIT + OECD + EU + 
@@ -89,10 +90,10 @@ tax_alt <- left_join(tax_final, tax_etr, by = c("iso2c", "year")) %>%
 
 tax2 <- pdata.frame(tax_alt, index = c("iso2c", "year"))
 
-effective <- ETR ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend +
+effective <- ETR ~ log(popTot) + popUrb + pop65 + pop14 + PIT + govspend + execR +
              ecoOpen + kaopen + EU + OECD
 
-eff_gdp <- ETR ~ log(GDP) + popUrb + pop65 + pop14 + PIT + govspend +
+eff_gdp <- ETR ~ log(GDP) + popUrb + pop65 + pop14 + PIT + govspend + execR + 
            ecoOpen + kaopen + EU + OECD
 
 

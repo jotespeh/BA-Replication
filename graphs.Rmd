@@ -11,10 +11,83 @@ load("output/tax_final.rds")
 
 
 
+```{r Trend Graphs}
+
+theme_set(theme_classic())
+
+tax_trends <- tax_final %>% select(year, country, CIT = CIT_f, EU, OECD) %>%
+  gather(EU, OECD)
+
+
+plot_trends <- ggplot(tax_final, mapping = aes(x = year)) + theme_classic() +
+  geom_smooth(aes(y = CIT_f, linetype = EU), se = FALSE, colour = "grey22", 
+              show.legend = FALSE)
+plot_trends
+
+
+tax_mean <- tax_final %>% select(year, country, CIT = CIT_f) %>%
+  group_by(year) %>%
+  mutate(mean_c = mean(CIT, na.rm = TRUE))
+
+plot_mean <- ggplot(tax_mean, mapping = aes(x = year)) + theme_classic() +
+  geom_smooth(aes(y = CIT), se = FALSE, colour = "black") + 
+  geom_line(aes(y = mean_c))
+
+
+```
+
+```{r Dumbbell Graph}
+# health$Area <- factor(health$Area)
+
+CIT_change <- tax_final %>% select(year, country, CIT = CIT_f) %>% 
+  mutate(CIT = CIT/100) %>%
+  filter(!is.na(CIT), year == 1981 | year == 2000 | year == 2015) %>%
+  spread(year, CIT) %>% 
+  arrange(desc(`2000`), desc(`1981`)) %>%
+  mutate(country = factor(country, levels = rev(country)))
+  
+
+gg <- ggplot(CIT_change, aes(x=`2000`, xend=`2015`, y=country)) + 
+        geom_dumbbell(color="grey77", 
+                      size=0.75, 
+                      colour_x="grey22") + 
+        scale_x_continuous(label = scales::percent) + 
+        labs(x="Corporate Income Tax Rate", 
+             y=NULL, 
+             title="The Race to the Bottom", 
+             subtitle="Change Between 2000 and 2015",
+             caption = "The darker circle marks the rate in 2000.") +
+             theme(axis.title.x = element_text(hjust = 1),
+                   panel.grid.major.x = element_line(color = "grey77", size = 0.2),
+                   panel.grid.major.y = element_line(color = "grey77", size = 0.15, linetype = "longdash"))
+gg
+
+```
+
 ```{r}
+plot_change2 <- CIT_change %>% filter(!is.na(`1981`)) %>%
+  ggplot(aes(x=`1981`, xend=`2015`, y=country)) + 
+        geom_dumbbell(color="grey77", 
+                      size=0.75, 
+                      colour_x="grey22") + 
+        scale_x_continuous(label = scales::percent) + 
+        labs(x="Corporate Income Tax Rate", 
+             y=NULL, 
+             title="The Race to the Bottom", 
+             subtitle="Change Between 2000 and 2015" +
+             theme(axis.title.x = element_text(hjust = 1, face = "italic"))
 
-ggplot(tax_final, mapping = aes(x = year)) + theme_classic() +
-  geom_smooth(aes(y = CIT_f, linetype = EU), se = FALSE, colour = "black") 
+plot_change2
 
+
+
+tax_size <- tax_final %>% select(country, year, CIT = CIT_f, GDP) %>%
+  mutate(GDP = log(GDP)) 
+
+plot_size <- tax_size %>% filter(year == 2015) %>%
+  ggplot(aes(x = GDP, y = CIT)) + geom_smooth(color = "grey22", se = FALSE, size = 0.7) +
+  geom_point() + geom_text(aes(label=country), hjust = 1.1, vjust = -0.2, size = 3,
+                           check_overlap = TRUE)
+plot_size
 ```
 
