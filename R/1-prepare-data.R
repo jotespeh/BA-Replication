@@ -133,6 +133,14 @@ PIT <- rbind(PIT_wti, PIT_oecd) %>%
 
 save(PIT, file = "output/PIT.rds")
 
+VAT_oecd <- read_csv2("raw/OECD_VAT.csv") %>%
+  gather("year", "VAT", num_range("",1973:2016)) %>%
+  mutate((VAT = as.numeric(VAT))/100,
+         iso2c = countrycode(country, "country.name", "iso2c"),
+         year = as.numeric(year))
+
+save(VAT_oecd, file = "output/VAT_OECD.rds")
+
 ## Mergin', yo ----
 
 tax_comb <- left_join(tax_st, tax_ef, by = c("country", "year")) %>%

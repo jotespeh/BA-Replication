@@ -7,6 +7,7 @@ output: html_notebook
 ```{r}
 source("R/0-load-libraries.R")
 load("output/tax_final.rds")
+path_graphs <- "/Users/jakob/Uni/papers/BA/graphs/"
 ```
 
 
@@ -33,6 +34,7 @@ plot_mean <- ggplot(tax_mean, mapping = aes(x = year)) + theme_classic() +
   geom_smooth(aes(y = CIT), se = FALSE, colour = "black") + 
   geom_line(aes(y = mean_c))
 
+ggsave("tax_trends.png",plot_trends, width = 17, units = "cm", path = path_graphs)
 
 ```
 
@@ -44,24 +46,27 @@ CIT_change <- tax_final %>% select(year, country, CIT = CIT_f) %>%
   filter(!is.na(CIT), year == 1981 | year == 2000 | year == 2015) %>%
   spread(year, CIT) %>% 
   arrange(desc(`2000`), desc(`1981`)) %>%
-  mutate(country = factor(country, levels = rev(country)))
+  mutate(country = factor(country, levels = rev(country)), change = `2015` - `2000`)
   
 
 gg <- ggplot(CIT_change, aes(x=`2000`, xend=`2015`, y=country)) + 
         geom_dumbbell(color="grey77", 
                       size=0.75, 
                       colour_x="grey22") + 
+        geom_text(aes(label = scales::percent(change)), size = 2, nudge_x = 0.02, color = "grey22") +
         scale_x_continuous(label = scales::percent) + 
         labs(x="Corporate Income Tax Rate", 
              y=NULL, 
-             title="The Race to the Bottom", 
-             subtitle="Change Between 2000 and 2015",
+             title=NULL,
+             subtitle=NULL,
              caption = "The darker circle marks the rate in 2000.") +
+        theme_classic() +
              theme(axis.title.x = element_text(hjust = 1),
+                   axis.text.y = element_text(hjust = 1),
                    panel.grid.major.x = element_line(color = "grey77", size = 0.2),
                    panel.grid.major.y = element_line(color = "grey77", size = 0.15, linetype = "longdash"))
 gg
-
+ggsave("tax_change.png", gg,  width = 17, unit = "cm", path = path_graphs)
 ```
 
 ```{r}
@@ -90,4 +95,19 @@ plot_size <- tax_size %>% filter(year == 2015) %>%
                            check_overlap = TRUE)
 plot_size
 ```
+
+
+```{r}
+
+load("output/VAT_OECD.rds")
+load("output/PIT.rds")
+
+CIT <- select(tax_final, iso2c, year, CIT_f)
+
+tax_comp <- left_join(VAT_oecd, PIT, by = c("year", "iso2c")) %>%
+            left_join(CIT, by = c("year", "iso2c"))
+
+
+```
+
 
