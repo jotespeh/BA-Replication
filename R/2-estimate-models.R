@@ -9,7 +9,7 @@
 
 load("output/tax_final.rds")
 
-tax <- plm.data(tax_final, c("iso2c", "year"))
+tax <- pdata.frame(tax_final, c("iso2c", "year"))
 
 # Summary Stats & Descriptive ----
 
@@ -62,7 +62,7 @@ tax_final %>% filter(is.na(PIT)) %>% group_by(country) %>% summarise(N = n())
 stargazer(tax_final, type = "text")
 
 
-
+coeftest(model_baseline, vcov. = vcovBK)
 
 # Regression Diagnostic ----
 

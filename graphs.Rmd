@@ -101,11 +101,26 @@ plot_size
 
 load("output/VAT_OECD.rds")
 load("output/PIT.rds")
+load("output/tax_final.rds")
 
-CIT <- select(tax_final, iso2c, year, CIT_f)
+tax_comp <- select(tax_final, iso2c, year,  CIT = CIT_f, PIT) %>% mutate(CIT = CIT/100, PIT = PIT/100) %>%
+  left_join(VAT_oecd, by = c("year", "iso2c"))
 
-tax_comp <- left_join(VAT_oecd, PIT, by = c("year", "iso2c")) %>%
-            left_join(CIT, by = c("year", "iso2c"))
+
+l_tee <- c("VAT" = "dashed", "PIT" = "dotted", "CIT" = "solid")
+
+graph_comp <- ggplot(tax_comp, aes(x = year)) +
+  geom_smooth(aes(y = CIT, linetype = "CIT"), se = FALSE, color = "grey22") +
+  geom_smooth(aes(y=PIT, lty = "PIT"), se = FALSE, color = "grey22") +
+  geom_smooth(aes(y = VAT, lty = "VAT"), se = FALSE, color = "grey22") + 
+  scale_y_continuous(breaks = seq(0, 0.6, 0.05),label = scales::percent) +
+  scale_linetype_manual("", values = l_tee) + theme_classic() +
+  theme(legend.position = "bottom", legend.key = element_rect(size = 10, color = 'white'), 
+        legend.spacing.x = unit(100, "lines")) +
+  labs(x = NULL, y = NULL)
+
+graph_comp
+ggsave("tax_comp.png", graph_comp, width = 17, units = "cm", path = path_graphs)
 
 
 ```
